@@ -1,72 +1,917 @@
-const state={cart:[],category:"All",customer:false,paymentMethod:null};
-const money=n=>"Rs. "+n.toLocaleString("en-LK",{minimumFractionDigits:2,maximumFractionDigits:2});
-const $=id=>document.getElementById(id);
-
-function renderCategories(){
- const cats=["All",...new Set(PRODUCTS.map(p=>p.category))];
- $("categories").innerHTML=cats.map(c=>`<button class="category ${c===state.category?"active":""}" data-cat="${c}">${c}</button>`).join("");
- document.querySelectorAll(".category").forEach(b=>b.onclick=()=>{state.category=b.dataset.cat;renderCategories();renderProducts()});
-}
-function renderProducts(){
- const q=$("searchInput").value.trim().toLowerCase();
- const list=PRODUCTS.filter(p=>(state.category==="All"||p.category===state.category)&&(!q||p.name.toLowerCase().includes(q)||p.barcode.includes(q)));
- $("products").innerHTML=list.map(p=>`<article class="product" data-id="${p.id}"><div class="product-img">${p.emoji}</div><h3>${p.name}</h3><small>${p.category} · ${p.barcode}</small><div class="price">${money(p.price)}</div></article>`).join("")||`<div class="empty"><div>🔎</div><b>No products found</b><span>Try another product or barcode</span></div>`;
- document.querySelectorAll(".product").forEach(el=>el.onclick=()=>addToCart(+el.dataset.id));
-}
-
-function addToCart(id){
- const p=PRODUCTS.find(x=>x.id===id), item=state.cart.find(x=>x.id===id);
- item?item.qty++:state.cart.push({...p,qty:1});
- renderCart();toast(`${p.name} added`);
-}
-function changeQty(id,delta){
- const item=state.cart.find(x=>x.id===id);if(!item)return;
- item.qty+=delta;if(item.qty<=0)state.cart=state.cart.filter(x=>x.id!==id);
- renderCart();
-}
-function totals(){
- const subtotal=state.cart.reduce((s,i)=>s+i.price*i.qty,0);
- const discount=state.customer&&subtotal>=3000?Math.round(subtotal*.05):0;
- return {subtotal,discount,total:subtotal-discount};
-}
-
-function renderCart(){
- const {subtotal,discount,total}=totals(), count=state.cart.reduce((s,i)=>s+i.qty,0);
- $("itemCount").textContent=`${count} item${count!==1?"s":""}`;
- $("subtotal").textContent=money(subtotal);$("discount").textContent=`− ${money(discount)}`;$("total").textContent=money(total);
- if(!state.cart.length){$("cartItems").innerHTML=`<div class="empty"><div>🛒</div><b>Your cart is empty</b><span>Scan or select a product to begin</span></div>`;return}
- $("cartItems").innerHTML=state.cart.map(i=>`<div class="cart-row"><div class="cart-icon">${i.emoji}</div><div><h4>${i.name}</h4><small>${money(i.price)} each</small><div class="qty"><button onclick="changeQty(${i.id},-1)">−</button><b>${i.qty}</b><button onclick="changeQty(${i.id},1)">+</button></div></div><div class="row-price">${money(i.price*i.qty)}</div></div>`).join("");
-}
-
-function toast(msg){const t=$("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1600)}
-$("searchInput").addEventListener("input",renderProducts);
-$("customerBtn").onclick=()=>{state.customer=true;$("customerCard").classList.remove("hidden");$("customerBtn").classList.add("hidden");renderCart();toast("Gold customer added — 5% discount applied")};
-$("removeCustomer").onclick=()=>{state.customer=false;$("customerCard").classList.add("hidden");$("customerBtn").classList.remove("hidden");renderCart()};
-$("clearBtn").onclick=()=>{if(state.cart.length&&confirm("Clear current sale?")){state.cart=[];renderCart();toast("Sale cleared")}};
-$("holdBtn").onclick=()=>toast("Sale held successfully");
-$("payBtn").onclick=()=>{
- if(!state.cart.length)return toast("Add products before payment");
- $("paymentAmount").textContent=`Total: ${money(totals().total)}`;$("paymentModal").classList.remove("hidden");
+const state = {
+    cart: [],
+    category: "All",
+    customer: null,
+    paymentMethod: null
 };
 
-$("closePayment").onclick=()=>$("paymentModal").classList.add("hidden");
-document.querySelectorAll(".payment-methods button").forEach(b=>b.onclick=()=>{
- document.querySelectorAll(".payment-methods button").forEach(x=>x.classList.remove("selected"));b.classList.add("selected");state.paymentMethod=b.dataset.method;
- $("cashArea").classList.toggle("hidden",state.paymentMethod!=="Cash");
-});
-$("cashInput").addEventListener("input",()=>{const c=+$("cashInput").value||0;$("change").textContent=money(Math.max(0,c-totals().total))});
 
-$("completeBtn").onclick=()=>{
- if(!state.paymentMethod)return toast("Select a payment method");
- if(state.paymentMethod==="Cash"&&((+$("cashInput").value||0)<totals().total))return toast("Insufficient cash");
- const invoice="INV-"+Date.now().toString().slice(-8);
- $("paymentModal").classList.add("hidden");state.cart=[];state.customer=false;state.paymentMethod=null;$("customerCard").classList.add("hidden");$("customerBtn").classList.remove("hidden");renderCart();toast(`✓ Sale ${invoice} completed`);
-};
+/* =========================
+   BASIC HELPERS
+========================= */
 
-document.addEventListener("keydown",e=>{
- if(e.ctrlKey&&e.key.toLowerCase()==="k"){e.preventDefault();$("searchInput").focus()}
- if(e.key==="F2"){e.preventDefault();$("searchInput").focus()}
- if(e.key==="F4"){e.preventDefault();$("payBtn").click()}
- if(e.key==="F8"){e.preventDefault();$("holdBtn").click()}
+const $ = (id) => document.getElementById(id);
+
+const money = (amount) =>
+    "Rs. " +
+    Number(amount).toLocaleString("en-LK", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+
+
+/* =========================
+   CATEGORIES
+========================= */
+
+function renderCategories() {
+
+    const categories = [
+        "All",
+        ...new Set(PRODUCTS.map(product => product.category))
+    ];
+
+    $("categories").innerHTML = categories
+        .map(category => `
+            <button
+                class="category ${category === state.category ? "active" : ""}"
+                data-category="${category}">
+                ${category}
+            </button>
+        `)
+        .join("");
+
+    document.querySelectorAll(".category").forEach(button => {
+
+        button.addEventListener("click", () => {
+
+            state.category = button.dataset.category;
+
+            renderCategories();
+            renderProducts();
+
+        });
+
+    });
+}
+
+
+/* =========================
+   PRODUCTS
+========================= */
+
+function renderProducts() {
+
+    const search = $("searchInput")
+        .value
+        .trim()
+        .toLowerCase();
+
+    const filteredProducts = PRODUCTS.filter(product => {
+
+        const categoryMatch =
+            state.category === "All" ||
+            product.category === state.category;
+
+        const searchMatch =
+            !search ||
+            product.name.toLowerCase().includes(search) ||
+            product.barcode.includes(search);
+
+        return categoryMatch && searchMatch;
+
+    });
+
+
+    if (filteredProducts.length === 0) {
+
+        $("products").innerHTML = `
+            <div class="empty">
+                <div>🔎</div>
+                <b>No products found</b>
+                <span>Try another product or barcode</span>
+            </div>
+        `;
+
+        return;
+    }
+
+
+    $("products").innerHTML = filteredProducts
+        .map(product => {
+
+            let stockClass = "";
+            let stockText = `${product.stock} in stock`;
+
+            if (product.stock <= 5) {
+                stockClass = "low-stock";
+                stockText = `Only ${product.stock} left`;
+            }
+            else if (product.stock <= 10) {
+                stockClass = "warning-stock";
+                stockText = `${product.stock} in stock`;
+            }
+
+            return `
+                <article
+                    class="product"
+                    data-id="${product.id}">
+
+                    <div class="product-img">
+                        ${product.emoji}
+                    </div>
+
+                    <h3>
+                        ${product.name}
+                    </h3>
+
+                    <small>
+                        ${product.category}
+                    </small>
+
+                    <div class="product-bottom">
+
+                        <div class="price">
+                            ${money(product.price)}
+                        </div>
+
+                        <div class="stock ${stockClass}">
+                            ${stockText}
+                        </div>
+
+                    </div>
+
+                </article>
+            `;
+
+        })
+        .join("");
+
+
+    document.querySelectorAll(".product").forEach(card => {
+
+        card.addEventListener("click", () => {
+
+            const productId = Number(card.dataset.id);
+
+            addToCart(productId);
+
+        });
+
+    });
+}
+
+
+/* =========================
+   ADD PRODUCT
+========================= */
+
+function addToCart(productId) {
+
+    const product =
+        PRODUCTS.find(item => item.id === productId);
+
+    if (!product) {
+        return;
+    }
+
+
+    const existingItem =
+        state.cart.find(item => item.id === productId);
+
+
+    const currentQuantity =
+        existingItem ? existingItem.qty : 0;
+
+
+    if (currentQuantity >= product.stock) {
+
+        toast("⚠ Not enough stock available");
+
+        return;
+    }
+
+
+    if (existingItem) {
+
+        existingItem.qty++;
+
+    } else {
+
+        state.cart.push({
+            ...product,
+            qty: 1
+        });
+
+    }
+
+
+    renderCart();
+
+    toast(`${product.name} added`);
+}
+
+
+/* =========================
+   CHANGE QUANTITY
+========================= */
+
+function changeQty(productId, amount) {
+
+    const item =
+        state.cart.find(product => product.id === productId);
+
+    if (!item) {
+        return;
+    }
+
+
+    const newQuantity =
+        item.qty + amount;
+
+
+    if (newQuantity > item.stock) {
+
+        toast("⚠ Maximum available stock reached");
+
+        return;
+    }
+
+
+    if (newQuantity <= 0) {
+
+        state.cart =
+            state.cart.filter(item => item.id !== productId);
+
+    } else {
+
+        item.qty = newQuantity;
+
+    }
+
+
+    renderCart();
+}
+
+
+/* =========================
+   TOTAL CALCULATION
+========================= */
+
+function calculateTotals() {
+
+    const subtotal =
+        state.cart.reduce(
+            (total, item) =>
+                total + item.price * item.qty,
+            0
+        );
+
+
+    let discount = 0;
+
+
+    /*
+        Gold customer:
+        5% discount above Rs.3000
+    */
+
+    if (
+        state.customer &&
+        state.customer.tier === "Gold" &&
+        subtotal >= 3000
+    ) {
+
+        discount =
+            Math.round(subtotal * 0.05);
+
+    }
+
+
+    const total =
+        subtotal - discount;
+
+
+    return {
+        subtotal,
+        discount,
+        total
+    };
+}
+
+
+/* =========================
+   CART
+========================= */
+
+function renderCart() {
+
+    const {
+        subtotal,
+        discount,
+        total
+    } = calculateTotals();
+
+
+    const itemCount =
+        state.cart.reduce(
+            (count, item) =>
+                count + item.qty,
+            0
+        );
+
+
+    $("itemCount").textContent =
+        `${itemCount} item${itemCount !== 1 ? "s" : ""}`;
+
+
+    $("subtotal").textContent =
+        money(subtotal);
+
+
+    $("discount").textContent =
+        `− ${money(discount)}`;
+
+
+    $("total").textContent =
+        money(total);
+
+
+    if (state.cart.length === 0) {
+
+        $("cartItems").innerHTML = `
+            <div class="empty">
+
+                <div>🛒</div>
+
+                <b>Your cart is empty</b>
+
+                <span>
+                    Scan or select a product to begin
+                </span>
+
+            </div>
+        `;
+
+        return;
+    }
+
+
+    $("cartItems").innerHTML =
+        state.cart.map(item => `
+
+            <div class="cart-row">
+
+                <div class="cart-icon">
+                    ${item.emoji}
+                </div>
+
+
+                <div>
+
+                    <h4>
+                        ${item.name}
+                    </h4>
+
+                    <small>
+                        ${money(item.price)}
+                        / ${item.unit}
+                    </small>
+
+
+                    <div class="qty">
+
+                        <button
+                            onclick="changeQty(${item.id}, -1)">
+                            −
+                        </button>
+
+                        <b>
+                            ${item.qty}
+                        </b>
+
+                        <button
+                            onclick="changeQty(${item.id}, 1)">
+                            +
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+                <div class="row-price">
+
+                    ${money(
+                        item.price * item.qty
+                    )}
+
+                </div>
+
+            </div>
+
+        `).join("");
+}
+
+
+/* =========================
+   CUSTOMER
+========================= */
+
+$("customerBtn").addEventListener("click", () => {
+
+    state.customer = {
+        id: "CUS-001",
+        name: "Nimal Perera",
+        tier: "Gold",
+        points: 8450
+    };
+
+
+    $("customerCard").classList.remove("hidden");
+
+    $("customerBtn").classList.add("hidden");
+
+
+    renderCustomer();
+
+    renderCart();
+
+    toast("Gold member added");
 });
-renderCategories();renderProducts();renderCart();
+
+
+function renderCustomer() {
+
+    if (!state.customer) {
+        return;
+    }
+
+
+    $("customerCard").innerHTML = `
+
+        <div>
+
+            <b>
+                ${state.customer.name}
+            </b>
+
+            <small>
+                ${state.customer.tier}
+                Member ·
+                ${state.customer.points.toLocaleString()}
+                pts
+            </small>
+
+        </div>
+
+        <button id="removeCustomer">
+            ×
+        </button>
+
+    `;
+
+
+    $("removeCustomer").addEventListener("click", removeCustomer);
+}
+
+
+function removeCustomer() {
+
+    state.customer = null;
+
+    $("customerCard").classList.add("hidden");
+
+    $("customerBtn").classList.remove("hidden");
+
+    renderCart();
+}
+
+
+/* =========================
+   SEARCH
+========================= */
+
+$("searchInput").addEventListener(
+    "input",
+    renderProducts
+);
+
+
+/*
+    Barcode scanner support.
+
+    Most USB barcode scanners behave
+    like a keyboard and type the barcode
+    followed by ENTER.
+*/
+
+$("searchInput").addEventListener(
+    "keydown",
+    event => {
+
+        if (event.key !== "Enter") {
+            return;
+        }
+
+
+        const barcode =
+            $("searchInput").value.trim();
+
+
+        const product =
+            PRODUCTS.find(
+                item => item.barcode === barcode
+            );
+
+
+        if (!product) {
+
+            toast("❌ Product barcode not found");
+
+            return;
+        }
+
+
+        addToCart(product.id);
+
+        $("searchInput").value = "";
+
+        renderProducts();
+
+    }
+);
+
+
+/* =========================
+   CLEAR SALE
+========================= */
+
+$("clearBtn").addEventListener(
+    "click",
+    () => {
+
+        if (state.cart.length === 0) {
+            return;
+        }
+
+
+        const confirmed =
+            confirm("Clear current sale?");
+
+
+        if (!confirmed) {
+            return;
+        }
+
+
+        state.cart = [];
+
+        renderCart();
+
+        toast("Sale cleared");
+
+    }
+);
+
+
+/* =========================
+   HOLD SALE
+========================= */
+
+$("holdBtn").addEventListener(
+    "click",
+    () => {
+
+        if (state.cart.length === 0) {
+
+            toast("Nothing to hold");
+
+            return;
+        }
+
+
+        toast("Sale held successfully");
+
+    }
+);
+
+
+/* =========================
+   PAYMENT
+========================= */
+
+$("payBtn").addEventListener(
+    "click",
+    () => {
+
+        if (state.cart.length === 0) {
+
+            toast("Add products before payment");
+
+            return;
+        }
+
+
+        const totals =
+            calculateTotals();
+
+
+        $("paymentAmount").textContent =
+            `Total: ${money(totals.total)}`;
+
+
+        $("paymentModal")
+            .classList
+            .remove("hidden");
+
+    }
+);
+
+
+$("closePayment").addEventListener(
+    "click",
+    () => {
+
+        $("paymentModal")
+            .classList
+            .add("hidden");
+
+    }
+);
+
+
+/* =========================
+   PAYMENT METHODS
+========================= */
+
+document
+    .querySelectorAll(".payment-methods button")
+    .forEach(button => {
+
+        button.addEventListener(
+            "click",
+            () => {
+
+                document
+                    .querySelectorAll(
+                        ".payment-methods button"
+                    )
+                    .forEach(item =>
+                        item.classList.remove(
+                            "selected"
+                        )
+                    );
+
+
+                button.classList.add("selected");
+
+
+                state.paymentMethod =
+                    button.dataset.method;
+
+
+                $("cashArea")
+                    .classList
+                    .toggle(
+                        "hidden",
+                        state.paymentMethod !== "Cash"
+                    );
+
+            }
+        );
+
+    });
+
+
+/* =========================
+   CASH CALCULATION
+========================= */
+
+$("cashInput").addEventListener(
+    "input",
+    () => {
+
+        const cash =
+            Number($("cashInput").value) || 0;
+
+
+        const total =
+            calculateTotals().total;
+
+
+        const change =
+            Math.max(
+                0,
+                cash - total
+            );
+
+
+        $("change").textContent =
+            money(change);
+
+    }
+);
+
+
+/* =========================
+   COMPLETE SALE
+========================= */
+
+$("completeBtn").addEventListener(
+    "click",
+    () => {
+
+        if (!state.paymentMethod) {
+
+            toast("Select a payment method");
+
+            return;
+        }
+
+
+        const totals =
+            calculateTotals();
+
+
+        if (
+            state.paymentMethod === "Cash" &&
+            Number($("cashInput").value) < totals.total
+        ) {
+
+            toast("Insufficient cash");
+
+            return;
+        }
+
+
+        const invoiceNumber =
+            "INV-" +
+            Date.now()
+                .toString()
+                .slice(-8);
+
+
+        /*
+            Reduce stock after successful sale.
+        */
+
+        state.cart.forEach(cartItem => {
+
+            const product =
+                PRODUCTS.find(
+                    item => item.id === cartItem.id
+                );
+
+
+            if (product) {
+
+                product.stock -= cartItem.qty;
+
+            }
+
+        });
+
+
+        $("paymentModal")
+            .classList
+            .add("hidden");
+
+
+        state.cart = [];
+
+        state.customer = null;
+
+        state.paymentMethod = null;
+
+
+        $("customerCard")
+            .classList
+            .add("hidden");
+
+
+        $("customerBtn")
+            .classList
+            .remove("hidden");
+
+
+        $("cashInput").value = "";
+
+        $("change").textContent =
+            money(0);
+
+
+        document
+            .querySelectorAll(
+                ".payment-methods button"
+            )
+            .forEach(button =>
+                button.classList.remove(
+                    "selected"
+                )
+            );
+
+
+        renderProducts();
+
+        renderCart();
+
+
+        toast(
+            `✓ Sale ${invoiceNumber} completed`
+        );
+
+    }
+);
+
+
+/* =========================
+   KEYBOARD SHORTCUTS
+========================= */
+
+document.addEventListener(
+    "keydown",
+    event => {
+
+        if (
+            event.ctrlKey &&
+            event.key.toLowerCase() === "k"
+        ) {
+
+            event.preventDefault();
+
+            $("searchInput").focus();
+
+        }
+
+
+        if (event.key === "F2") {
+
+            event.preventDefault();
+
+            $("searchInput").focus();
+
+        }
+
+
+        if (event.key === "F4") {
+
+            event.preventDefault();
+
+            $("payBtn").click();
+
+        }
+
+
+        if (event.key === "F8") {
+
+            event.preventDefault();
+
+            $("holdBtn").click();
+
+        }
+
+    }
+);
+
+
+/* =========================
+   TOAST
+========================= */
+
+function toast(message) {
+
+    const element =
+        $("toast");
+
+
+    element.textContent =
+        message;
+
+
+    element.classList.add(
+        "show"
+    );
+
+
+    setTimeout(
+        () => {
+            element.classList.remove(
+                "show"
+            );
+        },
+        1600
+    );
+
+}
+
+
+/* =========================
+   START APPLICATION
+========================= */
+
+renderCategories();
+
+renderProducts();
+
+renderCart();
