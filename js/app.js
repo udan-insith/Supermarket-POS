@@ -13,3 +13,14 @@ function renderProducts(){
  $("products").innerHTML=list.map(p=>`<article class="product" data-id="${p.id}"><div class="product-img">${p.emoji}</div><h3>${p.name}</h3><small>${p.category} · ${p.barcode}</small><div class="price">${money(p.price)}</div></article>`).join("")||`<div class="empty"><div>🔎</div><b>No products found</b><span>Try another product or barcode</span></div>`;
  document.querySelectorAll(".product").forEach(el=>el.onclick=()=>addToCart(+el.dataset.id));
 }
+
+function addToCart(id){
+ const p=PRODUCTS.find(x=>x.id===id), item=state.cart.find(x=>x.id===id);
+ item?item.qty++:state.cart.push({...p,qty:1});
+ renderCart();toast(`${p.name} added`);
+}
+function changeQty(id,delta){
+ const item=state.cart.find(x=>x.id===id);if(!item)return;
+ item.qty+=delta;if(item.qty<=0)state.cart=state.cart.filter(x=>x.id!==id);
+ renderCart();
+}
