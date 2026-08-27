@@ -47,5 +47,23 @@
       <div class="shortcuts"><span><kbd>F2</kbd> Search</span><span><kbd>F4</kbd> Payment</span><span><kbd>F8</kbd> Hold</span></div>
     </aside>
   </main>
+
+  <div class="modal hidden" id="paymentModal">
+    <div class="modal-box payment-box">
+      <button class="close" id="closePayment">×</button>
+      <h2>Complete Payment</h2>
+      <p id="paymentAmount">Total: Rs. 0.00</p>
+      <div class="payment-methods">
+        <button data-method="Cash">💵<span>Cash</span></button>
+        <button data-method="Card">💳<span>Card</span></button>
+        <button data-method="QR">▣<span>QR Payment</span></button>
+      </div>
+      <div id="cashArea" class="cash-area hidden">
+        <label>Cash received</label><input id="cashInput" type="number" min="0" placeholder="0.00">
+        <div class="change">Change <b id="change">Rs. 0.00</b></div>
+      </div>
+      <button class="complete-btn" id="completeBtn">Complete Sale</button>
+    </div>
+  </div>
 </body>
 </html>
