@@ -48,3 +48,10 @@ $("payBtn").onclick=()=>{
  if(!state.cart.length)return toast("Add products before payment");
  $("paymentAmount").textContent=`Total: ${money(totals().total)}`;$("paymentModal").classList.remove("hidden");
 };
+
+$("closePayment").onclick=()=>$("paymentModal").classList.add("hidden");
+document.querySelectorAll(".payment-methods button").forEach(b=>b.onclick=()=>{
+ document.querySelectorAll(".payment-methods button").forEach(x=>x.classList.remove("selected"));b.classList.add("selected");state.paymentMethod=b.dataset.method;
+ $("cashArea").classList.toggle("hidden",state.paymentMethod!=="Cash");
+});
+$("cashInput").addEventListener("input",()=>{const c=+$("cashInput").value||0;$("change").textContent=money(Math.max(0,c-totals().total))});
