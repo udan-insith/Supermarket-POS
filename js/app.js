@@ -62,3 +62,11 @@ $("completeBtn").onclick=()=>{
  const invoice="INV-"+Date.now().toString().slice(-8);
  $("paymentModal").classList.add("hidden");state.cart=[];state.customer=false;state.paymentMethod=null;$("customerCard").classList.add("hidden");$("customerBtn").classList.remove("hidden");renderCart();toast(`✓ Sale ${invoice} completed`);
 };
+
+document.addEventListener("keydown",e=>{
+ if(e.ctrlKey&&e.key.toLowerCase()==="k"){e.preventDefault();$("searchInput").focus()}
+ if(e.key==="F2"){e.preventDefault();$("searchInput").focus()}
+ if(e.key==="F4"){e.preventDefault();$("payBtn").click()}
+ if(e.key==="F8"){e.preventDefault();$("holdBtn").click()}
+});
+renderCategories();renderProducts();renderCart();
