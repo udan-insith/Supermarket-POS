@@ -55,3 +55,10 @@ document.querySelectorAll(".payment-methods button").forEach(b=>b.onclick=()=>{
  $("cashArea").classList.toggle("hidden",state.paymentMethod!=="Cash");
 });
 $("cashInput").addEventListener("input",()=>{const c=+$("cashInput").value||0;$("change").textContent=money(Math.max(0,c-totals().total))});
+
+$("completeBtn").onclick=()=>{
+ if(!state.paymentMethod)return toast("Select a payment method");
+ if(state.paymentMethod==="Cash"&&((+$("cashInput").value||0)<totals().total))return toast("Insufficient cash");
+ const invoice="INV-"+Date.now().toString().slice(-8);
+ $("paymentModal").classList.add("hidden");state.cart=[];state.customer=false;state.paymentMethod=null;$("customerCard").classList.add("hidden");$("customerBtn").classList.remove("hidden");renderCart();toast(`✓ Sale ${invoice} completed`);
+};
