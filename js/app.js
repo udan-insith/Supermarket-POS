@@ -37,3 +37,14 @@ function renderCart(){
  if(!state.cart.length){$("cartItems").innerHTML=`<div class="empty"><div>🛒</div><b>Your cart is empty</b><span>Scan or select a product to begin</span></div>`;return}
  $("cartItems").innerHTML=state.cart.map(i=>`<div class="cart-row"><div class="cart-icon">${i.emoji}</div><div><h4>${i.name}</h4><small>${money(i.price)} each</small><div class="qty"><button onclick="changeQty(${i.id},-1)">−</button><b>${i.qty}</b><button onclick="changeQty(${i.id},1)">+</button></div></div><div class="row-price">${money(i.price*i.qty)}</div></div>`).join("");
 }
+
+function toast(msg){const t=$("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1600)}
+$("searchInput").addEventListener("input",renderProducts);
+$("customerBtn").onclick=()=>{state.customer=true;$("customerCard").classList.remove("hidden");$("customerBtn").classList.add("hidden");renderCart();toast("Gold customer added — 5% discount applied")};
+$("removeCustomer").onclick=()=>{state.customer=false;$("customerCard").classList.add("hidden");$("customerBtn").classList.remove("hidden");renderCart()};
+$("clearBtn").onclick=()=>{if(state.cart.length&&confirm("Clear current sale?")){state.cart=[];renderCart();toast("Sale cleared")}};
+$("holdBtn").onclick=()=>toast("Sale held successfully");
+$("payBtn").onclick=()=>{
+ if(!state.cart.length)return toast("Add products before payment");
+ $("paymentAmount").textContent=`Total: ${money(totals().total)}`;$("paymentModal").classList.remove("hidden");
+};
