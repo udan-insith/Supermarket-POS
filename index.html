@@ -26,6 +26,26 @@
       <div class="categories" id="categories"></div>
       <div class="products" id="products"></div>
     </section>
+
+    <aside class="cart-panel">
+      <div class="cart-head">
+        <div><h2>Current Sale</h2><small id="itemCount">0 items</small></div>
+        <button class="customer-btn" id="customerBtn">👤 Add Customer</button>
+      </div>
+      <div class="customer-card hidden" id="customerCard">
+        <div><b>Nimal Perera</b><small>Gold Member · 8,450 pts</small></div><button id="removeCustomer">×</button>
+      </div>
+      <div class="cart-items" id="cartItems">
+        <div class="empty"><div>🛒</div><b>Your cart is empty</b><span>Scan or select a product to begin</span></div>
+      </div>
+      <div class="summary">
+        <div><span>Subtotal</span><b id="subtotal">Rs. 0.00</b></div>
+        <div><span>Discount</span><b class="discount" id="discount">− Rs. 0.00</b></div>
+        <div class="total"><span>Total</span><strong id="total">Rs. 0.00</strong></div>
+      </div>
+      <button class="pay-btn" id="payBtn">Proceed to Payment <span>→</span></button>
+      <div class="shortcuts"><span><kbd>F2</kbd> Search</span><span><kbd>F4</kbd> Payment</span><span><kbd>F8</kbd> Hold</span></div>
+    </aside>
   </main>
 </body>
 </html>
