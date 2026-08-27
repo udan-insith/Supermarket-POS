@@ -24,3 +24,8 @@ function changeQty(id,delta){
  item.qty+=delta;if(item.qty<=0)state.cart=state.cart.filter(x=>x.id!==id);
  renderCart();
 }
+function totals(){
+ const subtotal=state.cart.reduce((s,i)=>s+i.price*i.qty,0);
+ const discount=state.customer&&subtotal>=3000?Math.round(subtotal*.05):0;
+ return {subtotal,discount,total:subtotal-discount};
+}
