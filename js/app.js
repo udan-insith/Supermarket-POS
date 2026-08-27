@@ -29,3 +29,11 @@ function totals(){
  const discount=state.customer&&subtotal>=3000?Math.round(subtotal*.05):0;
  return {subtotal,discount,total:subtotal-discount};
 }
+
+function renderCart(){
+ const {subtotal,discount,total}=totals(), count=state.cart.reduce((s,i)=>s+i.qty,0);
+ $("itemCount").textContent=`${count} item${count!==1?"s":""}`;
+ $("subtotal").textContent=money(subtotal);$("discount").textContent=`− ${money(discount)}`;$("total").textContent=money(total);
+ if(!state.cart.length){$("cartItems").innerHTML=`<div class="empty"><div>🛒</div><b>Your cart is empty</b><span>Scan or select a product to begin</span></div>`;return}
+ $("cartItems").innerHTML=state.cart.map(i=>`<div class="cart-row"><div class="cart-icon">${i.emoji}</div><div><h4>${i.name}</h4><small>${money(i.price)} each</small><div class="qty"><button onclick="changeQty(${i.id},-1)">−</button><b>${i.qty}</b><button onclick="changeQty(${i.id},1)">+</button></div></div><div class="row-price">${money(i.price*i.qty)}</div></div>`).join("");
+}
