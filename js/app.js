@@ -293,7 +293,7 @@ function renderCart() {
 
 
     const itemCount =
-        state.cart.reduce(
+        Cart.items.reduce(
             (count, item) =>
                 count + item.qty,
             0
@@ -316,7 +316,7 @@ function renderCart() {
         money(total);
 
 
-    if (state.cart.length === 0) {
+    if (Cart.items.length === 0) {
 
         $("cartItems").innerHTML = `
             <div class="empty">
@@ -337,7 +337,7 @@ function renderCart() {
 
 
     $("cartItems").innerHTML =
-        state.cart.map(item => `
+        Cart.items.map(item => `
 
             <div class="cart-row">
 
