@@ -692,67 +692,121 @@ $("completeBtn").addEventListener(
     "click",
     () => {
 
-        if (!state.paymentMethod) {
-
-            toast("Select a payment method");
-
-            return;
-        }
-
-
         const totals =
             calculateTotals();
 
 
-        if (
-            state.paymentMethod === "Cash" &&
-            Number($("cashInput").value) < totals.total
-        ) {
+        const received =
+            Number(
+                $("cashInput").value
+            ) || 0;
 
-            toast("Insufficient cash");
+
+        const validation =
+            Payments.validate(
+                state.paymentMethod,
+                totals.total,
+                received
+            );
+
+
+        if (!validation.valid) {
+
+            toast(
+                validation.message
+            );
 
             return;
         }
 
 
-        const invoiceNumber =
-            "INV-" +
-            Date.now()
-                .toString()
-                .slice(-8);
+        /*
+            Create receipt before
+            clearing the cart.
+        */
+
+        const receipt =
+            Receipt.create(
+                Cart.items,
+                state.customer,
+                state.paymentMethod,
+                totals
+            );
 
 
         /*
-            Reduce stock after successful sale.
+            Reduce inventory.
         */
 
-        state.cart.forEach(cartItem => {
+        Cart.items.forEach(item => {
 
             const product =
                 PRODUCTS.find(
-                    item => item.id === cartItem.id
+                    product =>
+                        product.id === item.id
                 );
 
 
             if (product) {
 
-                product.stock -= cartItem.qty;
+                product.stock -= item.qty;
 
             }
 
         });
 
 
-        $("paymentModal")
-            .classList
-            .add("hidden");
+        /*
+            Save last receipt.
+        */
+
+        Storage.save(
+            "lastReceipt",
+            receipt
+        );
 
 
-        state.cart = [];
+        /*
+            Save transaction history.
+        */
+
+        const transactions =
+            Storage.get(
+                "transactions",
+                []
+            );
+
+
+        transactions.push(receipt);
+
+
+        Storage.save(
+            "transactions",
+            transactions
+        );
+
+
+        /*
+            Print receipt.
+        */
+
+        Receipt.print(receipt);
+
+
+        /*
+            Reset POS.
+        */
+
+        Cart.clear();
 
         state.customer = null;
 
         state.paymentMethod = null;
+
+
+        $("paymentModal")
+            .classList
+            .add("hidden");
 
 
         $("customerCard")
@@ -788,7 +842,7 @@ $("completeBtn").addEventListener(
 
 
         toast(
-            `✓ Sale ${invoiceNumber} completed`
+            `✓ ${receipt.invoiceNumber} completed`
         );
 
     }
