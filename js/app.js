@@ -166,33 +166,28 @@ function renderProducts() {
    ADD PRODUCT
 ========================= */
 
-function addToCart(productId) {
+function changeQty(productId, amount) {
 
-    const product =
-        PRODUCTS.find(
-            product => product.id === productId
-        );
+    if (amount > 0) {
 
-    if (!product) {
-        return;
-    }
+        const success =
+            Cart.increase(productId);
 
+        if (!success) {
 
-    const result =
-        Cart.add(product);
+            toast("⚠ Maximum stock reached");
 
+            return;
+        }
 
-    if (!result.success) {
+    } else {
 
-        toast("⚠ " + result.message);
+        Cart.decrease(productId);
 
-        return;
     }
 
 
     renderCart();
-
-    toast(`${product.name} added`);
 }
 
 
