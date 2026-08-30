@@ -521,21 +521,24 @@ $("clearBtn").addEventListener(
     "click",
     () => {
 
-        if (state.cart.length === 0) {
+        if (Cart.isEmpty()) {
+
+            toast("Nothing to clear");
+
             return;
         }
 
 
-        const confirmed =
-            confirm("Clear current sale?");
-
-
-        if (!confirmed) {
+        if (
+            !confirm(
+                "Clear current sale?"
+            )
+        ) {
             return;
         }
 
 
-        state.cart = [];
+        Cart.clear();
 
         renderCart();
 
