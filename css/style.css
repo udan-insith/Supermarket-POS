@@ -93,3 +93,41 @@ button,
         transform: translateX(0);
     }
 }
+
+/*      PRODUCTS CARDS      */
+.product {
+    animation: productAppear 0.35s ease both;
+}
+
+
+@keyframes productAppear {
+
+    from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+
+.product:hover {
+
+    transform:
+        translateY(-5px)
+        scale(1.015);
+
+    box-shadow:
+        0 12px 30px rgba(20, 30, 40, 0.10);
+}
+
+
+.product:active {
+
+    transform:
+        translateY(-1px)
+        scale(0.98);
+}
