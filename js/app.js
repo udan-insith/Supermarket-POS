@@ -578,9 +578,11 @@ $("payBtn").addEventListener(
     "click",
     () => {
 
-        if (state.cart.length === 0) {
+        if (Cart.isEmpty()) {
 
-            toast("Add products before payment");
+            toast(
+                "Add products before payment"
+            );
 
             return;
         }
