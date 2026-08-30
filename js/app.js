@@ -169,40 +169,24 @@ function renderProducts() {
 function addToCart(productId) {
 
     const product =
-        PRODUCTS.find(item => item.id === productId);
+        PRODUCTS.find(
+            product => product.id === productId
+        );
 
     if (!product) {
         return;
     }
 
 
-    const existingItem =
-        state.cart.find(item => item.id === productId);
+    const result =
+        Cart.add(product);
 
 
-    const currentQuantity =
-        existingItem ? existingItem.qty : 0;
+    if (!result.success) {
 
-
-    if (currentQuantity >= product.stock) {
-
-        toast("⚠ Not enough stock available");
+        toast("⚠ " + result.message);
 
         return;
-    }
-
-
-    if (existingItem) {
-
-        existingItem.qty++;
-
-    } else {
-
-        state.cart.push({
-            ...product,
-            qty: 1
-        });
-
     }
 
 
