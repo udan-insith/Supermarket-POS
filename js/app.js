@@ -556,7 +556,7 @@ $("holdBtn").addEventListener(
     "click",
     () => {
 
-        if (state.cart.length === 0) {
+       if (Cart.isEmpty()) {
 
             toast("Nothing to hold");
 
