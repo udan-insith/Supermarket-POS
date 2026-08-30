@@ -240,20 +240,11 @@ function changeQty(productId, amount) {
 function calculateTotals() {
 
     const subtotal =
-        state.cart.reduce(
-            (total, item) =>
-                total + item.price * item.qty,
-            0
-        );
+        Cart.subtotal();
 
 
     let discount = 0;
 
-
-    /*
-        Gold customer:
-        5% discount above Rs.3000
-    */
 
     if (
         state.customer &&
@@ -267,17 +258,17 @@ function calculateTotals() {
     }
 
 
-    const total =
-        subtotal - discount;
-
-
     return {
+
         subtotal,
+
         discount,
-        total
+
+        total:
+            subtotal - discount
+
     };
 }
-
 
 /* =========================
    CART
